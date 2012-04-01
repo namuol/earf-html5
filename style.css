@@ -1,0 +1,19 @@
+body {
+  padding: 0;
+  margin: 0;
+  background: #000;
+}
+div#main {
+  padding: 0;
+  margin: 0;
+}
+div#inner {
+  padding: 0;
+  margin: 0 auto;
+  width: 640;
+}
+canvas#scr {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
