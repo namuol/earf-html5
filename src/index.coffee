@@ -78,9 +78,19 @@ html ->
         imageData.data[index + 2] = b
         imageData.data[index + 3] = a
 
+      cvy = 0
       render = ->
         cam.eye.x += 0.5
         cam.eye.z += 0.5
+        do ->
+          cx = Math.floor(cam.eye.x) % map.width
+          cz = Math.floor(cam.eye.z) % map.height
+          pos = (cx + cz * map.width) * 4
+          h = map.data[pos] * 0.25
+          target = (h+45) - cam.eye.y
+          cvy = (target - cvy) * 0.03
+          cam.eye.y += cvy
+
         scr = c.createImageData(SCR_W, SCR_H)
         x = 0
         ch = cam.eye.y
