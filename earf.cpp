@@ -174,7 +174,6 @@ int main(int ac, char** av) {
     if(SDL_MUSTLOCK(scr)) SDL_LockSurface(scr);
     if(SDL_MUSTLOCK(map)) SDL_LockSurface(map);
     for (int x=0; x < SCR_W; ++x) {
-      double maxH = 0;
       int maxY = SCR_H-1;
       double cx,cy,cz;
       double h, ch;
