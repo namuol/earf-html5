@@ -2,10 +2,9 @@ html ->
   head ->
     link rel:'stylesheet', href:'style.css'
   body ->
-    img id:'map', src:'heightmap.jpg', style:'display:none'
     div id:'main', ->
       div id:'inner', ->
-        canvas id:'scr', width:'320', height:'240', 'THIS IS A CANVAS.'
+        canvas id:'scr', width:'160', height:'120', 'THIS IS A CANVAS.'
 
   coffeescript ->
     scr_el = document.getElementById('scr')
@@ -14,16 +13,14 @@ html ->
     SCR_H = scr_el.height
     MAX_D = 255
 
-    map_el = document.getElementById 'map'
+    map_el = new Image()
     map_el.onload = ->
-      console.log 'loaded'
       map_canvas = document.createElement 'canvas'
       map_canvas.setAttribute 'width', map_el.width
       map_canvas.setAttribute 'height', map_el.height
       map_ctx = map_canvas.getContext '2d'
       map_ctx.drawImage map_el, 0,0
-      map = map_ctx.getImageData()
-      document.getElementById('inner').appendChild(map_canvas)
+      map = map_ctx.getImageData 0,0, map_el.width, map_el.height
 
       # shim layer with setTimeout fallback
       window.requestAnimFrame = do ->
@@ -33,7 +30,7 @@ html ->
                 window.oRequestAnimationFrame      ||
                 window.msRequestAnimationFrame     ||
                 (callback) ->
-                  window.setTimeout callback, 1000 / 60
+                  window.setTimeout callback, 1000 / 20
 
       class Vector
         constructor: (@x, @y, @z) ->
@@ -75,29 +72,51 @@ html ->
 
       setPixel = (imageData, x, y, r, g, b, a) ->
         index = (x + y * imageData.width) * 4
-        imageData.data[index + 0] = r
+        imageData.data[index] = r
         imageData.data[index + 1] = g
         imageData.data[index + 2] = b
         imageData.data[index + 3] = a
 
       render = ->
+        cam.eye.x += 0.5
+        cam.eye.z += 0.5
         scr = c.createImageData(SCR_W, SCR_H)
-        maxY = 0
         x = 0
+        ch = cam.eye.y
         while x < SCR_W
+          maxY = SCR_H-1
           ray = cam.getRayFromUV(x, 0)
 
           d = 35
           while d < MAX_D
-            cx = cam.eye.x + ray.x * d
-            cz = cam.eye.z + ray.z * d
-            ++d
+            cx = Math.round(cam.eye.x + ray.x * d) % map.width
+            cz = Math.round(cam.eye.z + ray.z * d) % map.height
+            if cx < 0 or cz < 0 or cx >= map.width or cz >= map.height
+              ++d
+              continue
+            pos = (cx + cz * map.width) * 4
+            r = map.data[pos]
 
+            h = r * 0.25
+            y = Math.round(SCR_H - (((h - ch) * 150) / d + SCR_H))
+            if not (y < 0)
+              if y < maxY
+                _y = maxY
+                while _y > y and _y < SCR_H
+                  fog = 1.0 - d/MAX_D
+                  g = map.data[pos + 1]
+                  b = map.data[pos + 2]
+                  setPixel(scr, x,_y, r,g,b, 0xff*fog)
+                  --_y
+                maxY = y
+            ++d
           ++x
-        c.putImageData map, 0, 0
+        c.putImageData scr, 0, 0
 
       animloop = ->
-        requestAnimFrame animloop
+        requestAnimFrame(animloop)
         render()
 
       animloop()
+
+    map_el.src = 'heightmap.jpg'

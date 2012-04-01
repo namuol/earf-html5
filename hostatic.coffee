@@ -1,2 +1,2 @@
 require('zappa') ->
-  @app.use @express.static __dirname + '/Resources'
+  @app.use @express.static __dirname + '/build'
