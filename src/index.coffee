@@ -4,7 +4,7 @@ html ->
   body ->
     div id:'main', ->
       div id:'inner', ->
-        canvas id:'scr', width:'160', height:'120', 'THIS IS A CANVAS.'
+        canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
 
   coffeescript ->
     scr_el = document.getElementById('scr')
@@ -12,6 +12,7 @@ html ->
     SCR_W = scr_el.width
     SCR_H = scr_el.height
     MAX_D = 255
+    LOD_FACTOR = 8
 
     map_el = new Image()
     map_el.onload = ->
@@ -68,7 +69,7 @@ html ->
           p = @look.sub((@perp.mul((@xstart + u*@xmult))))
           return new Vector(p.x, @ystart + v*@ymult, p.z).normal()
 
-      window.cam = new Camera(new Vector(127,64,127), 45, 100, 100)
+      window.cam = new Camera(new Vector(127,64,127), 45, SCR_W,SCR_H)
 
       setPixel = (imageData, x, y, r, g, b, a) ->
         index = (x + y * imageData.width) * 4
@@ -89,16 +90,13 @@ html ->
 
           d = 35
           while d < MAX_D
-            cx = Math.round(cam.eye.x + ray.x * d) % map.width
-            cz = Math.round(cam.eye.z + ray.z * d) % map.height
-            if cx < 0 or cz < 0 or cx >= map.width or cz >= map.height
-              ++d
-              continue
+            cx = Math.floor(cam.eye.x + ray.x * d) % map.width
+            cz = Math.floor(cam.eye.z + ray.z * d) % map.height
             pos = (cx + cz * map.width) * 4
             r = map.data[pos]
 
             h = r * 0.25
-            y = Math.round(SCR_H - (((h - ch) * 150) / d + SCR_H))
+            y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H))
             if not (y < 0)
               if y < maxY
                 _y = maxY
@@ -109,7 +107,7 @@ html ->
                   setPixel(scr, x,_y, r,g,b, 0xff*fog)
                   --_y
                 maxY = y
-            ++d
+            d += 2# + LOD_FACTOR*Math.floor((d-30)/MAX_D)
           ++x
         c.putImageData scr, 0, 0
 
