@@ -13,6 +13,7 @@ html ->
     SCR_H = scr_el.height
     MAX_D = 255
     LOD_FACTOR = 8
+    DETAIL = 2
 
     map_el = new Image()
     map_el.onload = ->
@@ -31,7 +32,7 @@ html ->
                 window.oRequestAnimationFrame      ||
                 window.msRequestAnimationFrame     ||
                 (callback) ->
-                  window.setTimeout callback, 1000 / 20
+                  window.setTimeout callback, 1000 / 60
 
       class Vector
         constructor: (@x, @y, @z) ->
@@ -70,6 +71,7 @@ html ->
           return new Vector(p.x, @ystart + v*@ymult, p.z).normal()
 
       window.cam = new Camera(new Vector(127,64,127), 45, SCR_W,SCR_H)
+      cam.setAng(2*Math.PI)
 
       setPixel = (imageData, x, y, r, g, b, a) ->
         index = (x + y * imageData.width) * 4
@@ -98,7 +100,26 @@ html ->
           maxY = SCR_H-1
           ray = cam.getRayFromUV(x, 0)
 
-          d = 35
+          d = 15
+          while d < MAX_D/2
+            cx = Math.floor(cam.eye.x + ray.x * d) % map.width
+            cz = Math.floor(cam.eye.z + ray.z * d) % map.height
+            pos = (cx + cz * map.width) * 4
+            r = map.data[pos]
+
+            h = r * 0.25
+            y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H))
+            if not (y < 0)
+              if y < maxY
+                _y = maxY
+                fog = 1.0 - (d-100)/(MAX_D-100)
+                g = map.data[pos + 1]
+                b = map.data[pos + 2]
+                while _y > y and _y < SCR_H
+                  setPixel(scr, x,_y, r,g,b, 0xff*fog)
+                  --_y
+                maxY = y
+            d += DETAIL# + LOD_FACTOR*Math.floor((d-30)/MAX_D)
           while d < MAX_D
             cx = Math.floor(cam.eye.x + ray.x * d) % map.width
             cz = Math.floor(cam.eye.z + ray.z * d) % map.height
@@ -110,14 +131,15 @@ html ->
             if not (y < 0)
               if y < maxY
                 _y = maxY
+                fog = 1.0 - (d-100)/(MAX_D-100)
+                g = map.data[pos + 1]
+                b = map.data[pos + 2]
                 while _y > y and _y < SCR_H
-                  fog = 1.0 - d/MAX_D
-                  g = map.data[pos + 1]
-                  b = map.data[pos + 2]
                   setPixel(scr, x,_y, r,g,b, 0xff*fog)
                   --_y
                 maxY = y
-            d += 2# + LOD_FACTOR*Math.floor((d-30)/MAX_D)
+            d += DETAIL*2# + LOD_FACTOR*Math.floor((d-30)/MAX_D)
+
           ++x
         c.putImageData scr, 0, 0
 
