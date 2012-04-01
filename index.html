@@ -1,0 +1,40 @@
+<html><body></body><canvas id="canvas1" width="100" height="100">Random Canvas</canvas><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var animloop, render, setPixel;
+    window.requestAnimFrame = (function() {
+      return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
+        return window.setTimeout(callback, 1000 / 60);
+      };
+    })();
+    setPixel = function(imageData, x, y, r, g, b, a) {
+      var index;
+      index = (x + y * imageData.width) * 4;
+      imageData.data[index + 0] = r;
+      imageData.data[index + 1] = g;
+      imageData.data[index + 2] = b;
+      return imageData.data[index + 3] = a;
+    };
+    render = function() {
+      var b, c, element, g, height, i, imageData, r, width, x, y;
+      element = document.getElementById("canvas1");
+      c = element.getContext("2d");
+      width = parseInt(element.getAttribute("width"));
+      height = parseInt(element.getAttribute("height"));
+      imageData = c.createImageData(width, height);
+      i = 0;
+      while (i < 10000) {
+        x = parseInt(Math.random() * width);
+        y = parseInt(Math.random() * height);
+        r = parseInt(Math.random() * 256);
+        g = parseInt(Math.random() * 256);
+        b = parseInt(Math.random() * 256);
+        setPixel(imageData, x, y, r, g, b, 0xff);
+        i++;
+      }
+      return c.putImageData(imageData, 0, 0);
+    };
+    animloop = function() {
+      requestAnimFrame(animloop);
+      return render();
+    };
+    return animloop();
+  }).call(this);</script></html>
