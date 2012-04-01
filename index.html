@@ -1,11 +1,12 @@
 <html><head><link rel="stylesheet" href="style.css" /></head><body><div id="main"><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas></div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var LOD_FACTOR, MAX_D, SCR_H, SCR_W, c, map_el, scr_el;
+    var DETAIL, LOD_FACTOR, MAX_D, SCR_H, SCR_W, c, map_el, scr_el;
     scr_el = document.getElementById('scr');
     c = scr_el.getContext('2d');
     SCR_W = scr_el.width;
     SCR_H = scr_el.height;
     MAX_D = 255;
     LOD_FACTOR = 8;
+    DETAIL = 2;
     map_el = new Image();
     map_el.onload = function() {
       var Camera, Vector, animloop, cvy, map, map_canvas, map_ctx, render, setPixel;
@@ -17,7 +18,7 @@
       map = map_ctx.getImageData(0, 0, map_el.width, map_el.height);
       window.requestAnimFrame = (function() {
         return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
-          return window.setTimeout(callback, 1000 / 20);
+          return window.setTimeout(callback, 1000 / 60);
         };
       })();
       Vector = (function() {
@@ -83,6 +84,7 @@
 
       })();
       window.cam = new Camera(new Vector(127, 64, 127), 45, SCR_W, SCR_H);
+      cam.setAng(2 * Math.PI);
       setPixel = function(imageData, x, y, r, g, b, a) {
         var index;
         index = (x + y * imageData.width) * 4;
@@ -112,7 +114,29 @@
         while (x < SCR_W) {
           maxY = SCR_H - 1;
           ray = cam.getRayFromUV(x, 0);
-          d = 35;
+          d = 15;
+          while (d < MAX_D / 2) {
+            cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
+            cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
+            pos = (cx + cz * map.width) * 4;
+            r = map.data[pos];
+            h = r * 0.25;
+            y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H));
+            if (!(y < 0)) {
+              if (y < maxY) {
+                _y = maxY;
+                fog = 1.0 - (d - 100) / (MAX_D - 100);
+                g = map.data[pos + 1];
+                b = map.data[pos + 2];
+                while (_y > y && _y < SCR_H) {
+                  setPixel(scr, x, _y, r, g, b, 0xff * fog);
+                  --_y;
+                }
+                maxY = y;
+              }
+            }
+            d += DETAIL;
+          }
           while (d < MAX_D) {
             cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
             cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
@@ -123,17 +147,17 @@
             if (!(y < 0)) {
               if (y < maxY) {
                 _y = maxY;
+                fog = 1.0 - (d - 100) / (MAX_D - 100);
+                g = map.data[pos + 1];
+                b = map.data[pos + 2];
                 while (_y > y && _y < SCR_H) {
-                  fog = 1.0 - d / MAX_D;
-                  g = map.data[pos + 1];
-                  b = map.data[pos + 2];
                   setPixel(scr, x, _y, r, g, b, 0xff * fog);
                   --_y;
                 }
                 maxY = y;
               }
             }
-            d += 2;
+            d += DETAIL * 2;
           }
           ++x;
         }
