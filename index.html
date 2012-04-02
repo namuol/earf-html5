@@ -1,5 +1,5 @@
-<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.</div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var DETAIL, DOWN, LEFT, LOD_FACTOR, MAX_D, RIGHT, SCR_H, SCR_W, UP, c, down, left, map_el, right, scr_el, up;
+<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github!</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.<canvas id="lightmap" width="1024" height="1024" style="display:none"></canvas></div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var Camera, DETAIL, DOWN, LEFT, LOD_FACTOR, MAX_D, RIGHT, SCR_H, SCR_W, UP, Vector, c, down, left, map_el, right, scr_el, setPixel, up;
     LEFT = 37;
     RIGHT = 39;
     UP = 38;
@@ -12,205 +12,246 @@
     MAX_D = 255;
     LOD_FACTOR = 8;
     DETAIL = 2;
+    setPixel = function(imageData, x, y, r, g, b, a) {
+      var index;
+      index = (x + y * imageData.width) * 4;
+      imageData.data[index] = r;
+      imageData.data[index + 1] = g;
+      imageData.data[index + 2] = b;
+      return imageData.data[index + 3] = a;
+    };
+    window.requestAnimFrame = (function() {
+      return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
+        return window.setTimeout(callback, 1000 / 60);
+      };
+    })();
+    Vector = (function() {
+
+      function Vector(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+      }
+
+      Vector.prototype.add = function(v) {
+        return new Vector(this.x + v.x, this.y + v.y, this.z + v.z);
+      };
+
+      Vector.prototype.sub = function(v) {
+        return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
+      };
+
+      Vector.prototype.mul = function(s) {
+        return new Vector(this.x * s, this.y * s, this.z * s);
+      };
+
+      Vector.prototype.normal = function() {
+        var mag;
+        mag = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        this.x /= mag;
+        this.y /= mag;
+        this.z /= mag;
+        return this;
+      };
+
+      Vector.prototype.len = function() {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+      };
+
+      return Vector;
+
+    })();
+    Camera = (function() {
+
+      function Camera(eye, fovy, scr_w, scr_h) {
+        this.eye = eye;
+        this.fovy = fovy;
+        this.scr_w = scr_w;
+        this.scr_h = scr_h;
+        this.fovx = (this.scr_w / this.scr_h) * this.fovy;
+        this.xstart = -0.5 * this.fovx / 45.0;
+        this.ystart = 0.5 * this.fovy / 45.0;
+        this.xmult = (this.fovx / 45.0) / this.scr_w;
+        this.ymult = -(this.fovy / 45.0) / this.scr_h;
+        this.setAng(0);
+      }
+
+      Camera.prototype.setAng = function(v) {
+        this.ang = v;
+        this.look = new Vector(-Math.sin(this.ang), 0, -Math.cos(this.ang)).normal();
+        return this.perp = new Vector(-Math.sin(this.ang + Math.PI / 2), 0, -Math.cos(this.ang + Math.PI / 2)).normal();
+      };
+
+      Camera.prototype.getRayFromUV = function(u, v) {
+        var p;
+        p = this.look.sub(this.perp.mul(this.xstart + u * this.xmult));
+        return new Vector(p.x, this.ystart + v * this.ymult, p.z).normal();
+      };
+
+      return Camera;
+
+    })();
     map_el = new Image();
     map_el.onload = function() {
-      var Camera, Vector, animloop, cv, handle_key, map, map_canvas, map_ctx, render, setPixel;
-      map_canvas = document.createElement('canvas');
-      map_canvas.setAttribute('width', map_el.width);
-      map_canvas.setAttribute('height', map_el.height);
-      map_ctx = map_canvas.getContext('2d');
-      map_ctx.drawImage(map_el, 0, 0);
-      map = map_ctx.getImageData(0, 0, map_el.width, map_el.height);
-      window.requestAnimFrame = (function() {
-        return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
-          return window.setTimeout(callback, 1000 / 60);
-        };
-      })();
-      Vector = (function() {
-
-        function Vector(x, y, z) {
-          this.x = x;
-          this.y = y;
-          this.z = z;
-        }
-
-        Vector.prototype.add = function(v) {
-          return new Vector(this.x + v.x, this.y + v.y, this.z + v.z);
-        };
-
-        Vector.prototype.sub = function(v) {
-          return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
-        };
-
-        Vector.prototype.mul = function(s) {
-          return new Vector(this.x * s, this.y * s, this.z * s);
-        };
-
-        Vector.prototype.normal = function() {
-          var mag;
-          mag = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-          this.x /= mag;
-          this.y /= mag;
-          this.z /= mag;
-          return this;
-        };
-
-        Vector.prototype.len = function() {
-          return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-        };
-
-        return Vector;
-
-      })();
-      Camera = (function() {
-
-        function Camera(eye, fovy, scr_w, scr_h) {
-          this.eye = eye;
-          this.fovy = fovy;
-          this.scr_w = scr_w;
-          this.scr_h = scr_h;
-          this.fovx = (this.scr_w / this.scr_h) * this.fovy;
-          this.xstart = -0.5 * this.fovx / 45.0;
-          this.ystart = 0.5 * this.fovy / 45.0;
-          this.xmult = (this.fovx / 45.0) / this.scr_w;
-          this.ymult = -(this.fovy / 45.0) / this.scr_h;
-          this.setAng(0);
-        }
-
-        Camera.prototype.setAng = function(v) {
-          this.ang = v;
-          this.look = new Vector(-Math.sin(this.ang), 0, -Math.cos(this.ang)).normal();
-          return this.perp = new Vector(-Math.sin(this.ang + Math.PI / 2), 0, -Math.cos(this.ang + Math.PI / 2)).normal();
-        };
-
-        Camera.prototype.getRayFromUV = function(u, v) {
-          var p;
-          p = this.look.sub(this.perp.mul(this.xstart + u * this.xmult));
-          return new Vector(p.x, this.ystart + v * this.ymult, p.z).normal();
-        };
-
-        return Camera;
-
-      })();
-      window.cam = new Camera(new Vector(127, 64, 127), 25, SCR_W, SCR_H);
-      cam.setAng(-Math.PI);
-      setPixel = function(imageData, x, y, r, g, b, a) {
-        var index;
-        index = (x + y * imageData.width) * 4;
-        imageData.data[index] = r;
-        imageData.data[index + 1] = g;
-        imageData.data[index + 2] = b;
-        return imageData.data[index + 3] = a;
-      };
-      handle_key = function(e, isdown) {
-        if (e.keyCode === LEFT) {
-          return left = isdown;
-        } else if (e.keyCode === RIGHT) {
-          return right = isdown;
-        } else if (e.keyCode === UP) {
-          return up = isdown;
-        } else if (e.keyCode === DOWN) {
-          return down = isdown;
-        }
-      };
-      window.onkeydown = function(e) {
-        return handle_key(e, true);
-      };
-      window.onkeyup = function(e) {
-        return handle_key(e, false);
-      };
-      cv = new Vector(0, 0, 0);
-      render = function() {
-        var b, ch, cx, cz, d, fog, g, h, maxY, pos, r, ray, scr, x, y, _y;
-        scr = c.createImageData(SCR_W, SCR_H);
-        x = 0;
-        ch = cam.eye.y;
-        while (x < SCR_W) {
-          maxY = SCR_H - 1;
-          ray = cam.getRayFromUV(x, 0);
-          d = 15;
-          while (d < MAX_D / 2) {
-            cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
-            cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
-            pos = (cx + cz * map.width) * 4;
-            r = map.data[pos];
-            h = r * 0.25;
-            y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H));
-            if (!(y < 0)) {
-              if (y < maxY) {
-                _y = maxY;
-                fog = 1.0 - (d - 100) / (MAX_D - 100);
-                g = map.data[pos + 1];
-                b = map.data[pos + 2];
-                while (_y > y && _y < SCR_H) {
-                  setPixel(scr, x, _y, r, g, b, 0xff * fog);
-                  --_y;
-                }
-                maxY = y;
+      var colormap_el;
+      colormap_el = new Image();
+      colormap_el.onload = function() {
+        var animloop, compute_lightmap, cv, handle_key, lightmap, lightmap_canvas, lightmap_ctx, map, map_canvas, map_ctx, render;
+        map_canvas = document.createElement('canvas');
+        map_canvas.setAttribute('width', map_el.width);
+        map_canvas.setAttribute('height', map_el.height);
+        map_ctx = map_canvas.getContext('2d');
+        map_ctx.drawImage(map_el, 0, 0);
+        map = map_ctx.getImageData(0, 0, map_el.width, map_el.height);
+        lightmap_canvas = document.getElementById('lightmap');
+        lightmap_ctx = lightmap_canvas.getContext('2d');
+        lightmap_ctx.drawImage(colormap_el, 0, 0);
+        lightmap = lightmap_ctx.getImageData(0, 0, lightmap_canvas.width, lightmap_canvas.height);
+        compute_lightmap = function() {
+          var b, g, h, n, nmax, nn, nstep, pos, r, s, x, y;
+          x = 0;
+          nstep = 0.5;
+          nmax = 64;
+          while (x < lightmap.width) {
+            y = 0;
+            while (y < lightmap.height) {
+              s = 1;
+              pos = (x + y * map.width) * 4;
+              h = map.data[pos] * 0.25;
+              n = nstep;
+              nn = 1;
+              while (h + n < nmax) {
+                pos = (x + (y + nn) * map.width) * 4;
+                if (map.data[pos] * 0.25 > h + n) s = 0.4;
+                n += nstep;
+                ++nn;
               }
+              r = lightmap.data[pos] * s;
+              g = lightmap.data[pos + 1] * s;
+              b = lightmap.data[pos + 2] * s;
+              s *= 0xff;
+              setPixel(lightmap, x, y, s, s, s, 0x44);
+              ++y;
             }
-            d += DETAIL;
+            ++x;
           }
-          while (d < MAX_D) {
-            cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
-            cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
-            pos = (cx + cz * map.width) * 4;
-            r = map.data[pos];
-            h = r * 0.25;
-            y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H));
-            if (!(y < 0)) {
-              if (y < maxY) {
-                _y = maxY;
-                fog = 1.0 - (d - 100) / (MAX_D - 100);
-                g = map.data[pos + 1];
-                b = map.data[pos + 2];
-                while (_y > y && _y < SCR_H) {
-                  setPixel(scr, x, _y, r, g, b, 0xff * fog);
-                  --_y;
+          return lightmap_ctx.putImageData(lightmap, 0, 0);
+        };
+        window.cam = new Camera(new Vector(127, 64, 127), 25, SCR_W, SCR_H);
+        cam.setAng(-Math.PI);
+        handle_key = function(e, isdown) {
+          if (e.keyCode === LEFT) {
+            return left = isdown;
+          } else if (e.keyCode === RIGHT) {
+            return right = isdown;
+          } else if (e.keyCode === UP) {
+            return up = isdown;
+          } else if (e.keyCode === DOWN) {
+            return down = isdown;
+          }
+        };
+        window.onkeydown = function(e) {
+          return handle_key(e, true);
+        };
+        window.onkeyup = function(e) {
+          return handle_key(e, false);
+        };
+        cv = new Vector(0, 0, 0);
+        render = function() {
+          var b, ch, cx, cz, d, fog, g, h, maxY, pos, r, ray, scr, x, y, _y;
+          scr = c.createImageData(SCR_W, SCR_H);
+          x = 0;
+          ch = cam.eye.y;
+          while (x < SCR_W) {
+            maxY = SCR_H - 1;
+            ray = cam.getRayFromUV(x, 0);
+            d = 15;
+            while (d < MAX_D / 2) {
+              cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
+              cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
+              pos = (cx + cz * map.width) * 4;
+              r = map.data[pos];
+              h = r * 0.25;
+              y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H));
+              if (!(y < 0)) {
+                if (y < maxY) {
+                  _y = maxY;
+                  fog = 1.0 - (d - 100) / (MAX_D - 100);
+                  r = lightmap.data[pos];
+                  g = lightmap.data[pos + 1];
+                  b = lightmap.data[pos + 2];
+                  while (_y > y && _y < SCR_H) {
+                    setPixel(scr, x, _y, r, g, b, 0xff * fog);
+                    --_y;
+                  }
+                  maxY = y;
                 }
-                maxY = y;
               }
+              d += DETAIL;
             }
-            d += DETAIL * 2;
+            while (d < MAX_D) {
+              cx = Math.floor(cam.eye.x + ray.x * d) % map.width;
+              cz = Math.floor(cam.eye.z + ray.z * d) % map.height;
+              pos = (cx + cz * map.width) * 4;
+              r = map.data[pos];
+              h = r * 0.25;
+              y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H));
+              if (!(y < 0)) {
+                if (y < maxY) {
+                  _y = maxY;
+                  fog = 1.0 - (d - 100) / (MAX_D - 100);
+                  r = lightmap.data[pos];
+                  g = lightmap.data[pos + 1];
+                  b = lightmap.data[pos + 2];
+                  while (_y > y && _y < SCR_H) {
+                    setPixel(scr, x, _y, r, g, b, 0xff * fog);
+                    --_y;
+                  }
+                  maxY = y;
+                }
+              }
+              d += DETAIL * 2;
+            }
+            ++x;
           }
-          ++x;
-        }
-        return c.putImageData(scr, 0, 0);
+          return c.putImageData(scr, 0, 0);
+        };
+        animloop = function() {
+          var mustrender;
+          requestAnimFrame(animloop);
+          mustrender = false;
+          (function() {
+            var cx, cz, h, pos, target;
+            cx = Math.floor(cam.eye.x) % map.width;
+            cz = Math.floor(cam.eye.z) % map.height;
+            if (cx > 0 && cz > 0) {
+              pos = (cx + cz * map.width) * 4;
+              h = map.data[pos] * 0.25;
+              target = (h + 45) - cam.eye.y;
+              cv.y = (target - cv.y) * 0.03;
+            }
+            if (up) cv = cv.add(cam.look.mul(0.2));
+            if (down) cv = cv.sub(cam.look.mul(0.2));
+            if (left) {
+              mustrender = true;
+              cam.setAng(cam.ang + 0.035);
+            }
+            if (right) {
+              mustrender = true;
+              cam.setAng(cam.ang - 0.035);
+            }
+            cam.eye.x += cv.x;
+            cam.eye.y += cv.y;
+            cam.eye.z += cv.z;
+            return cv = cv.mul(0.9);
+          })();
+          if (!mustrender && cv.len() < 0.01) return;
+          return render();
+        };
+        render();
+        return animloop();
       };
-      animloop = function() {
-        var mustrender;
-        requestAnimFrame(animloop);
-        mustrender = false;
-        (function() {
-          var cx, cz, h, pos, target;
-          cx = Math.floor(cam.eye.x) % map.width;
-          cz = Math.floor(cam.eye.z) % map.height;
-          if (cx > 0 && cz > 0) {
-            pos = (cx + cz * map.width) * 4;
-            h = map.data[pos] * 0.25;
-            target = (h + 45) - cam.eye.y;
-            cv.y = (target - cv.y) * 0.03;
-          }
-          if (up) cv = cv.add(cam.look.mul(0.2));
-          if (down) cv = cv.sub(cam.look.mul(0.2));
-          if (left) {
-            mustrender = true;
-            cam.setAng(cam.ang + 0.035);
-          }
-          if (right) {
-            mustrender = true;
-            cam.setAng(cam.ang - 0.035);
-          }
-          cam.eye.x += cv.x;
-          cam.eye.y += cv.y;
-          cam.eye.z += cv.z;
-          return cv = cv.mul(0.9);
-        })();
-        if (!mustrender && cv.len() < 0.01) return;
-        return render();
-      };
-      render();
-      return animloop();
+      return colormap_el.src = 'colormap.jpg';
     };
     return map_el.src = 'heightmap.jpg';
   }).call(this);</script></html>
