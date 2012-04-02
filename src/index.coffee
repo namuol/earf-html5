@@ -26,7 +26,7 @@ html ->
     SCR_H = scr_el.height
     MAX_D = 255
     LOD_FACTOR = 8
-    DETAIL = 1
+    DETAIL = 2
 
     setPixel = (imageData, x, y, r, g, b, a) ->
       index = (x + y * imageData.width) * 4
