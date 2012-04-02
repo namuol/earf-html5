@@ -1,4 +1,7 @@
 body {
+  text-align: center;
+  color: #fff;
+  font-family: sans;
   background: #000;
 }
 div#main {
@@ -14,5 +17,33 @@ canvas#scr {
   padding: 0;
   margin: 0;
   width: 100%;
-  background: #345;
+  background: #62c0ff;
+}
+canvas#lightmap {
+  background: url("heightmap.jpg");
+}
+.ribbon {
+  overflow: hidden;
+}
+.ribbon a {
+  background: #fff;
+  position: absolute;
+  color: #000;
+  display: block;
+  margin: 0.05em 0;
+  padding: 0.5em 3.5em;
+  margin-left: -15pt;
+  text-align: center;
+  text-decoration: none;
+  left: -3em;
+  top: 2.5em;
+  -moz-transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+a {
+  color: #558;
+  text-decoration: none;
+}
+a:visited {
+  color: #858;
 }
