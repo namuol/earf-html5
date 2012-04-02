@@ -83,7 +83,7 @@ html ->
           return new Vector(p.x, @ystart + v*@ymult, p.z).normal()
 
       window.cam = new Camera(new Vector(127,64,127), 45, SCR_W,SCR_H)
-      cam.setAng(2*Math.PI)
+      cam.setAng(-Math.PI)
 
       setPixel = (imageData, x, y, r, g, b, a) ->
         index = (x + y * imageData.width) * 4
