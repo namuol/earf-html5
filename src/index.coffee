@@ -11,7 +11,11 @@ html ->
       div id:'inner', ->
         canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
         text 'Use the arrow keys to move around.'
-        canvas id:'lightmap', width:'1024', height:'1024', style:'display:none'
+        br ''
+        text 'Terrain generated with '
+        a href:'http://www.bundysoft.com/L3DT/', 'L3DT'
+        text '.'
+        canvas id:'lightmap', width:'512', height:'512', style:'display:none'
 
   coffeescript ->
     LEFT = 37
@@ -26,7 +30,7 @@ html ->
     SCR_H = scr_el.height
     MAX_D = 255
     LOD_FACTOR = 8
-    DETAIL = 2
+    DETAIL = 1
 
     setPixel = (imageData, x, y, r, g, b, a) ->
       index = (x + y * imageData.width) * 4
