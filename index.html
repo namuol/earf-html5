@@ -89,7 +89,7 @@
 
       })();
       window.cam = new Camera(new Vector(127, 64, 127), 45, SCR_W, SCR_H);
-      cam.setAng(2 * Math.PI);
+      cam.setAng(-Math.PI);
       setPixel = function(imageData, x, y, r, g, b, a) {
         var index;
         index = (x + y * imageData.width) * 4;
