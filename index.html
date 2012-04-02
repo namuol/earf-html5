@@ -1,4 +1,4 @@
-<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github!</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.<canvas id="lightmap" width="1024" height="1024" style="display:none"></canvas></div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github!</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.<br />Terrain generated with <a href="http://www.bundysoft.com/L3DT/">L3DT</a>.<canvas id="lightmap" width="512" height="512" style="display:none"></canvas></div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
     var Camera, DETAIL, DOWN, LEFT, LOD_FACTOR, MAX_D, RIGHT, SCR_H, SCR_W, UP, Vector, c, down, left, map_el, right, scr_el, setPixel, up;
     LEFT = 37;
     RIGHT = 39;
@@ -11,7 +11,7 @@
     SCR_H = scr_el.height;
     MAX_D = 255;
     LOD_FACTOR = 8;
-    DETAIL = 2;
+    DETAIL = 1;
     setPixel = function(imageData, x, y, r, g, b, a) {
       var index;
       index = (x + y * imageData.width) * 4;

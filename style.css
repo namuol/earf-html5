@@ -17,7 +17,7 @@ canvas#scr {
   padding: 0;
   margin: 0;
   width: 100%;
-  background: #567;
+  background: #62c0ff;
 }
 canvas#lightmap {
   background: url("heightmap.jpg");
@@ -39,4 +39,11 @@ canvas#lightmap {
   top: 2.5em;
   -moz-transform: rotate(-45deg);
   -webkit-transform: rotate(-45deg);
+}
+a {
+  color: #558;
+  text-decoration: none;
+}
+a:visited {
+  color: #858;
 }
