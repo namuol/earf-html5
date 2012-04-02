@@ -1,5 +1,10 @@
-<html><head><link rel="stylesheet" href="style.css" /></head><body><div id="main"><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas></div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var DETAIL, LOD_FACTOR, MAX_D, SCR_H, SCR_W, c, map_el, scr_el;
+<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.</div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var DETAIL, DOWN, LEFT, LOD_FACTOR, MAX_D, RIGHT, SCR_H, SCR_W, UP, c, down, left, map_el, right, scr_el, up;
+    LEFT = 37;
+    RIGHT = 39;
+    UP = 38;
+    DOWN = 40;
+    left = right = up = down = false;
     scr_el = document.getElementById('scr');
     c = scr_el.getContext('2d');
     SCR_W = scr_el.width;
@@ -9,7 +14,7 @@
     DETAIL = 2;
     map_el = new Image();
     map_el.onload = function() {
-      var Camera, Vector, animloop, cvy, map, map_canvas, map_ctx, render, setPixel;
+      var Camera, Vector, animloop, cv, handle_key, map, map_canvas, map_ctx, render, setPixel;
       map_canvas = document.createElement('canvas');
       map_canvas.setAttribute('width', map_el.width);
       map_canvas.setAttribute('height', map_el.height);
@@ -93,20 +98,44 @@
         imageData.data[index + 2] = b;
         return imageData.data[index + 3] = a;
       };
-      cvy = 0;
+      handle_key = function(e, isdown) {
+        if (e.keyCode === LEFT) {
+          return left = isdown;
+        } else if (e.keyCode === RIGHT) {
+          return right = isdown;
+        } else if (e.keyCode === UP) {
+          return up = isdown;
+        } else if (e.keyCode === DOWN) {
+          return down = isdown;
+        }
+      };
+      window.onkeydown = function(e) {
+        return handle_key(e, true);
+      };
+      window.onkeyup = function(e) {
+        return handle_key(e, false);
+      };
+      cv = new Vector(0, 0, 0);
       render = function() {
         var b, ch, cx, cz, d, fog, g, h, maxY, pos, r, ray, scr, x, y, _y;
-        cam.eye.x += 0.5;
-        cam.eye.z += 0.5;
         (function() {
           var cx, cz, h, pos, target;
           cx = Math.floor(cam.eye.x) % map.width;
           cz = Math.floor(cam.eye.z) % map.height;
-          pos = (cx + cz * map.width) * 4;
-          h = map.data[pos] * 0.25;
-          target = (h + 45) - cam.eye.y;
-          cvy = (target - cvy) * 0.03;
-          return cam.eye.y += cvy;
+          if (cx > 0 && cz > 0) {
+            pos = (cx + cz * map.width) * 4;
+            h = map.data[pos] * 0.25;
+            target = (h + 45) - cam.eye.y;
+            cv.y = (target - cv.y) * 0.03;
+          }
+          if (up) cv = cv.add(cam.look.mul(0.2));
+          if (down) cv = cv.sub(cam.look.mul(0.2));
+          if (left) cam.setAng(cam.ang + 0.035);
+          if (right) cam.setAng(cam.ang - 0.035);
+          cam.eye.x += cv.x;
+          cam.eye.y += cv.y;
+          cam.eye.z += cv.z;
+          return cv = cv.mul(0.9);
         })();
         scr = c.createImageData(SCR_W, SCR_H);
         x = 0;

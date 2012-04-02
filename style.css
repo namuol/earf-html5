@@ -1,4 +1,7 @@
 body {
+  text-align: center;
+  color: #fff;
+  font-family: sans;
   background: #000;
 }
 div#main {
@@ -15,4 +18,21 @@ canvas#scr {
   margin: 0;
   width: 100%;
   background: #345;
+}
+.ribbon {
+  overflow: hidden;
+}
+.ribbon a {
+  background: #fff;
+  position: absolute;
+  color: #000;
+  display: block;
+  margin: 0.05em 0;
+  padding: 0.5em 3.5em;
+  text-align: center;
+  text-decoration: none;
+  left: -3em;
+  top: 2.5em;
+  -moz-transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
 }
