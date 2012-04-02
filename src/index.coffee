@@ -7,7 +7,7 @@ html ->
 
     div id:'main', ->
       p ->
-        text 'A simple heightmap raycaster. 100% javascript and HTML5 canvas.'
+        text 'A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.'
       div id:'inner', ->
         canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
         text 'Use the arrow keys to move around.'
@@ -61,6 +61,8 @@ html ->
           @y /= mag
           @z /= mag
           @
+        len: ->
+          return Math.sqrt @x*@x + @y*@y + @z*@z
 
       class Camera
         constructor: (@eye, @fovy, @scr_w, @scr_h) ->
@@ -82,7 +84,7 @@ html ->
           p = @look.sub((@perp.mul((@xstart + u*@xmult))))
           return new Vector(p.x, @ystart + v*@ymult, p.z).normal()
 
-      window.cam = new Camera(new Vector(127,64,127), 45, SCR_W,SCR_H)
+      window.cam = new Camera(new Vector(127,64,127), 25, SCR_W,SCR_H)
       cam.setAng(-Math.PI)
 
       setPixel = (imageData, x, y, r, g, b, a) ->
@@ -108,28 +110,6 @@ html ->
         
       cv = new Vector(0,0,0)
       render = ->
-        do ->
-          cx = Math.floor(cam.eye.x) % map.width
-          cz = Math.floor(cam.eye.z) % map.height
-          if cx > 0 and cz > 0
-            pos = (cx + cz * map.width) * 4
-            h = map.data[pos] * 0.25
-            target = (h+45) - cam.eye.y
-            cv.y = (target - cv.y) * 0.03
-          if (up)
-            cv = cv.add(cam.look.mul(0.2))
-          if (down)
-            cv = cv.sub(cam.look.mul(0.2))
-          if (left)
-            cam.setAng(cam.ang + 0.035)
-          if (right)
-            cam.setAng(cam.ang - 0.035)
-
-          cam.eye.x += cv.x
-          cam.eye.y += cv.y
-          cam.eye.z += cv.z
-          cv = cv.mul 0.9
-
         scr = c.createImageData(SCR_W, SCR_H)
         x = 0
         ch = cam.eye.y
@@ -182,8 +162,37 @@ html ->
 
       animloop = ->
         requestAnimFrame(animloop)
+        mustrender = false
+        do ->
+          cx = Math.floor(cam.eye.x) % map.width
+          cz = Math.floor(cam.eye.z) % map.height
+          if cx > 0 and cz > 0
+            pos = (cx + cz * map.width) * 4
+            h = map.data[pos] * 0.25
+            target = (h+45) - cam.eye.y
+            cv.y = (target - cv.y) * 0.03
+          if (up)
+            cv = cv.add(cam.look.mul(0.2))
+          if (down)
+            cv = cv.sub(cam.look.mul(0.2))
+          if (left)
+            mustrender = true
+            cam.setAng(cam.ang + 0.035)
+          if (right)
+            mustrender = true
+            cam.setAng(cam.ang - 0.035)
+
+          cam.eye.x += cv.x
+          cam.eye.y += cv.y
+          cam.eye.z += cv.z
+          cv = cv.mul 0.9
+
+
+        if !mustrender and cv.len() < 0.01
+          return
         render()
 
+      render()
       animloop()
 
     map_el.src = 'heightmap.jpg'
