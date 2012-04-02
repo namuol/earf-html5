@@ -1,4 +1,4 @@
-<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.</div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+<html><head><link rel="stylesheet" href="style.css" /></head><body><div class="ribbon"><a href="http://github.com/namuol/earf-html5">fork me on github</a></div><div id="main"><p>A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.</p><div id="inner"><canvas id="scr" width="160" height="100">THIS IS A CANVAS.</canvas>Use the arrow keys to move around.</div></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
     var DETAIL, DOWN, LEFT, LOD_FACTOR, MAX_D, RIGHT, SCR_H, SCR_W, UP, c, down, left, map_el, right, scr_el, up;
     LEFT = 37;
     RIGHT = 39;
@@ -55,6 +55,10 @@
           return this;
         };
 
+        Vector.prototype.len = function() {
+          return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        };
+
         return Vector;
 
       })();
@@ -88,7 +92,7 @@
         return Camera;
 
       })();
-      window.cam = new Camera(new Vector(127, 64, 127), 45, SCR_W, SCR_H);
+      window.cam = new Camera(new Vector(127, 64, 127), 25, SCR_W, SCR_H);
       cam.setAng(-Math.PI);
       setPixel = function(imageData, x, y, r, g, b, a) {
         var index;
@@ -118,25 +122,6 @@
       cv = new Vector(0, 0, 0);
       render = function() {
         var b, ch, cx, cz, d, fog, g, h, maxY, pos, r, ray, scr, x, y, _y;
-        (function() {
-          var cx, cz, h, pos, target;
-          cx = Math.floor(cam.eye.x) % map.width;
-          cz = Math.floor(cam.eye.z) % map.height;
-          if (cx > 0 && cz > 0) {
-            pos = (cx + cz * map.width) * 4;
-            h = map.data[pos] * 0.25;
-            target = (h + 45) - cam.eye.y;
-            cv.y = (target - cv.y) * 0.03;
-          }
-          if (up) cv = cv.add(cam.look.mul(0.2));
-          if (down) cv = cv.sub(cam.look.mul(0.2));
-          if (left) cam.setAng(cam.ang + 0.035);
-          if (right) cam.setAng(cam.ang - 0.035);
-          cam.eye.x += cv.x;
-          cam.eye.y += cv.y;
-          cam.eye.z += cv.z;
-          return cv = cv.mul(0.9);
-        })();
         scr = c.createImageData(SCR_W, SCR_H);
         x = 0;
         ch = cam.eye.y;
@@ -193,9 +178,38 @@
         return c.putImageData(scr, 0, 0);
       };
       animloop = function() {
+        var mustrender;
         requestAnimFrame(animloop);
+        mustrender = false;
+        (function() {
+          var cx, cz, h, pos, target;
+          cx = Math.floor(cam.eye.x) % map.width;
+          cz = Math.floor(cam.eye.z) % map.height;
+          if (cx > 0 && cz > 0) {
+            pos = (cx + cz * map.width) * 4;
+            h = map.data[pos] * 0.25;
+            target = (h + 45) - cam.eye.y;
+            cv.y = (target - cv.y) * 0.03;
+          }
+          if (up) cv = cv.add(cam.look.mul(0.2));
+          if (down) cv = cv.sub(cam.look.mul(0.2));
+          if (left) {
+            mustrender = true;
+            cam.setAng(cam.ang + 0.035);
+          }
+          if (right) {
+            mustrender = true;
+            cam.setAng(cam.ang - 0.035);
+          }
+          cam.eye.x += cv.x;
+          cam.eye.y += cv.y;
+          cam.eye.z += cv.z;
+          return cv = cv.mul(0.9);
+        })();
+        if (!mustrender && cv.len() < 0.01) return;
         return render();
       };
+      render();
       return animloop();
     };
     return map_el.src = 'heightmap.jpg';
