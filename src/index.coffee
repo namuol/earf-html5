@@ -8,37 +8,36 @@ html ->
     div id:'main', ->
       p ->
         text 'A simple heightmap raycaster. 100% javascript (coffeescript) and HTML5 canvas.'
-      div id:'inner', ->
-        canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
-        text 'Use the arrow keys to move around.'
         br ''
         text 'Terrain generated with '
         a href:'http://www.bundysoft.com/L3DT/', 'L3DT'
         text '.'
+      div id:'inner', ->
+        canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
+        text 'Use the arrow keys to move around.'
+        br ''
+        label for:'lod', 'LOD intensity'
+        input type:'range', min:'2', max:'12', step:'1', id:'lod'
+        br ''
+
+        label for:'dd', 'draw distance'
+        input type:'range', min:'255', max:'2049', step:'1', id:'dd'
+        br ''
+
+        label for:'interlaced', 'interlaced'
+        input type:'checkbox', id:'interlaced'
+        br ''
+
         canvas id:'lightmap', width:'512', height:'512', style:'display:none'
 
   coffeescript ->
-    LEFT = 37
-    RIGHT = 39
-    UP = 38
-    DOWN = 40
-    left=right=up=down=false
-
-    scr_el = document.getElementById('scr')
-    c = scr_el.getContext '2d'
-    SCR_W = scr_el.width
-    SCR_H = scr_el.height
-    MAX_D = 255
-    LOD_FACTOR = 8
-    DETAIL = 1
-
     setPixel = (imageData, x, y, r, g, b, a) ->
       index = (x + y * imageData.width) * 4
       imageData.data[index] = r
       imageData.data[index + 1] = g
       imageData.data[index + 2] = b
       imageData.data[index + 3] = a
-    # shim layer with setTimeout fallback
+
     window.requestAnimFrame = do ->
       return  window.requestAnimationFrame       ||
               window.webkitRequestAnimationFrame ||
@@ -56,7 +55,6 @@ html ->
         return new Vector(@x-v.x, @y-v.y, @z-v.z)
       mul: (s) ->
         return new Vector(@x*s,@y*s,@z*s)
-
       normal: ->
         mag = Math.sqrt(@x*@x + @y*@y + @z*@z)
         @x /= mag
@@ -90,6 +88,44 @@ html ->
     map_el.onload = ->
       colormap_el = new Image()
       colormap_el.onload = ->
+        LEFT = 37
+        RIGHT = 39
+        UP = 38
+        DOWN = 40
+        left=right=up=down=false
+
+        MAX_D = 512
+        LOD_FACTOR = 4
+        DETAIL = 1
+        interlaced = false
+        scr_el = document.getElementById 'scr'
+
+        lod_el = document.getElementById 'lod'
+        lod_el.value =  LOD_FACTOR
+        lod_el.onchange = ->
+          LOD_FACTOR = lod_el.value
+          render()
+
+        dd_el = document.getElementById 'dd'
+        dd_el.value =  MAX_D
+        dd_el.onchange = ->
+          MAX_D = dd_el.value
+          render()
+
+        interlaced_el = document.getElementById 'interlaced'
+        interlaced_el.checked = if interlaced then 'checked' else undefined
+        interlaced_el.onchange = ->
+          if interlaced_el.checked
+            interlaced = true
+          else
+            interlaced = false
+          render()
+
+        c = scr_el.getContext '2d'
+        SCR_W = scr_el.width
+        SCR_H = scr_el.height
+
+
         map_canvas = document.createElement 'canvas'
         map_canvas.setAttribute 'width', map_el.width
         map_canvas.setAttribute 'height', map_el.height
@@ -147,59 +183,54 @@ html ->
           handle_key e, true
         window.onkeyup = (e) ->
           handle_key e, false
+        
+        ch = 0
+        d = 0
+        maxY = 0
+        x = 0
+        ray = null
+        scr = null
+        cast = () ->
+          cx = Math.floor(cam.eye.x + ray.x * d) % map.width
+          cz = Math.floor(cam.eye.z + ray.z * d) % map.height
+          pos = (cx + cz * map.width) * 4
+          r = map.data[pos]
+
+          h = r * 0.25
+          y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H))
+          if not (y < 0)
+            if y < maxY
+              _y = maxY
+              fog = 1.0 - (d-100)/(MAX_D-100)
+              r = lightmap.data[pos]
+              g = lightmap.data[pos+1]
+              b = lightmap.data[pos+2]
+              while _y > y and _y < SCR_H
+                setPixel(scr, x,_y, r,g,b, 0xff*fog)
+                if interlaced
+                  setPixel(scr, x+1,_y, r,g,b, 0xff*fog)
+                --_y
+              maxY = y
           
         cv = new Vector(0,0,0)
         render = ->
           scr = c.createImageData(SCR_W, SCR_H)
           x = 0
+          xstep = do -> if interlaced then 2 else 1
           ch = cam.eye.y
           while x < SCR_W
             maxY = SCR_H-1
             ray = cam.getRayFromUV(x, 0)
 
             d = 15
-            while d < MAX_D/2
-              cx = Math.floor(cam.eye.x + ray.x * d) % map.width
-              cz = Math.floor(cam.eye.z + ray.z * d) % map.height
-              pos = (cx + cz * map.width) * 4
-              r = map.data[pos]
-
-              h = r * 0.25
-              y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H))
-              if not (y < 0)
-                if y < maxY
-                  _y = maxY
-                  fog = 1.0 - (d-100)/(MAX_D-100)
-                  r = lightmap.data[pos]
-                  g = lightmap.data[pos+1]
-                  b = lightmap.data[pos+2]
-                  while _y > y and _y < SCR_H
-                    setPixel(scr, x,_y, r,g,b, 0xff*fog)
-                    --_y
-                  maxY = y
-              d += DETAIL
-            while d < MAX_D
-              cx = Math.floor(cam.eye.x + ray.x * d) % map.width
-              cz = Math.floor(cam.eye.z + ray.z * d) % map.height
-              pos = (cx + cz * map.width) * 4
-              r = map.data[pos]
-
-              h = r * 0.25
-              y = Math.floor(SCR_H - (((h - ch) * 150) / d + SCR_H))
-              if not (y < 0)
-                if y < maxY
-                  _y = maxY
-                  fog = 1.0 - (d-100)/(MAX_D-100)
-                  r = lightmap.data[pos]
-                  g = lightmap.data[pos+1]
-                  b = lightmap.data[pos+2]
-                  while _y > y and _y < SCR_H
-                    setPixel(scr, x,_y, r,g,b, 0xff*fog)
-                    --_y
-                  maxY = y
-              d += DETAIL*2# + LOD_FACTOR*Math.floor((d-30)/MAX_D)
-
-            ++x
+            lod = 1
+            while lod < LOD_FACTOR
+              maxd = MAX_D/(LOD_FACTOR-lod)
+              while d < maxd
+                cast()
+                d += DETAIL * lod
+              ++lod
+            x += xstep
           c.putImageData scr, 0, 0
 
         animloop = ->
