@@ -2,11 +2,23 @@ html ->
   head ->
     link rel:'stylesheet', href:'style.css'
   body ->
+    div class:'ribbon', ->
+      a href:'http://github.com/namuol/earf-html5', 'fork me on github'
+
     div id:'main', ->
+      p ->
+        text 'A simple heightmap raycaster. 100% javascript and HTML5 canvas.'
       div id:'inner', ->
         canvas id:'scr', width:'160', height:'100', 'THIS IS A CANVAS.'
+        text 'Use the arrow keys to move around.'
 
   coffeescript ->
+    LEFT = 37
+    RIGHT = 39
+    UP = 38
+    DOWN = 40
+    left=right=up=down=false
+
     scr_el = document.getElementById('scr')
     c = scr_el.getContext '2d'
     SCR_W = scr_el.width
@@ -79,19 +91,44 @@ html ->
         imageData.data[index + 1] = g
         imageData.data[index + 2] = b
         imageData.data[index + 3] = a
+      handle_key = (e, isdown) ->
+        if e.keyCode is LEFT
+          left = isdown
+        else if e.keyCode is RIGHT
+          right = isdown
+        else if e.keyCode is UP
+          up = isdown
+        else if e.keyCode is DOWN
+          down = isdown
 
-      cvy = 0
+      window.onkeydown = (e) ->
+        handle_key e, true
+      window.onkeyup = (e) ->
+        handle_key e, false
+        
+      cv = new Vector(0,0,0)
       render = ->
-        cam.eye.x += 0.5
-        cam.eye.z += 0.5
         do ->
           cx = Math.floor(cam.eye.x) % map.width
           cz = Math.floor(cam.eye.z) % map.height
-          pos = (cx + cz * map.width) * 4
-          h = map.data[pos] * 0.25
-          target = (h+45) - cam.eye.y
-          cvy = (target - cvy) * 0.03
-          cam.eye.y += cvy
+          if cx > 0 and cz > 0
+            pos = (cx + cz * map.width) * 4
+            h = map.data[pos] * 0.25
+            target = (h+45) - cam.eye.y
+            cv.y = (target - cv.y) * 0.03
+          if (up)
+            cv = cv.add(cam.look.mul(0.2))
+          if (down)
+            cv = cv.sub(cam.look.mul(0.2))
+          if (left)
+            cam.setAng(cam.ang + 0.035)
+          if (right)
+            cam.setAng(cam.ang - 0.035)
+
+          cam.eye.x += cv.x
+          cam.eye.y += cv.y
+          cam.eye.z += cv.z
+          cv = cv.mul 0.9
 
         scr = c.createImageData(SCR_W, SCR_H)
         x = 0
