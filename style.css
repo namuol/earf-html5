@@ -1,7 +1,7 @@
 body {
   text-align: center;
   color: #fff;
-  font-family: sans;
+  font-family: sans, sans-serif;
   background: #000;
 }
 div#main {
